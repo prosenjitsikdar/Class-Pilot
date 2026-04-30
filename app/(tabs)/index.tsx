@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useAuth } from "../_layout";
 import { getAdminOverview } from "../../lib/api/admin";
+import { getTeacherDashboard } from "../../lib/api/teacher";
 import { useEffect } from "react";
 
 function AdminOverview() {
@@ -115,6 +116,156 @@ function AdminOverview() {
   );
 }
 
+function TeacherOverview() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTeacherData();
+  }, []);
+
+  const fetchTeacherData = async () => {
+    try {
+      const res = await getTeacherDashboard();
+      setData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch teacher dashboard:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center py-20">
+        <ActivityIndicator size="large" color="#1e293b" />
+      </View>
+    );
+  }
+
+  if (!data) return null;
+
+  return (
+    <View className="pb-10">
+      {/* Horizontal Counts */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-6 mt-6 pb-4">
+        <View className="flex-row gap-x-4 pr-12">
+           <View className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 min-w-[140px]">
+             <Text className="text-gray-500 text-xs font-bold uppercase mb-2 tracking-wider">Total Batches</Text>
+             <Text className="text-primary text-3xl font-black">{data.summary.totalBatches}</Text>
+           </View>
+           <View className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 min-w-[140px]">
+             <Text className="text-gray-500 text-xs font-bold uppercase mb-2 tracking-wider">Students</Text>
+             <Text className="text-primary text-3xl font-black">{data.summary.totalStudents}</Text>
+           </View>
+           <View className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 min-w-[140px]">
+             <Text className="text-gray-500 text-xs font-bold uppercase mb-2 tracking-wider">Avg Score</Text>
+             <Text className="text-blue-500 text-3xl font-black">{data.summary.averageScorePercentage}%</Text>
+           </View>
+           <View className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 min-w-[140px]">
+             <Text className="text-gray-500 text-xs font-bold uppercase mb-2 tracking-wider">Attendance</Text>
+             <Text className="text-green-500 text-3xl font-black">{data.summary.attendanceRate}%</Text>
+           </View>
+        </View>
+      </ScrollView>
+
+      {/* Recent Quizzes */}
+      <View className="px-6 mt-6">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-primary text-lg font-bold">Recent Quizzes</Text>
+          <TouchableOpacity>
+            <Text className="text-blue-500 text-sm font-medium">View All</Text>
+          </TouchableOpacity>
+        </View>
+        <View className="gap-y-3">
+          {data.recentQuizzes?.length === 0 ? (
+            <Text className="text-gray-400 font-medium">No recent quizzes found.</Text>
+          ) : data.recentQuizzes?.map((quiz: any) => (
+             <View key={quiz.id} className="p-4 bg-white rounded-2xl border border-gray-50 shadow-sm flex-row justify-between items-center">
+                <View className="flex-1 pr-4">
+                   <Text className="text-primary font-bold text-base" numberOfLines={1}>{quiz.title}</Text>
+                   <Text className="text-gray-500 text-sm mt-1">{quiz.batch?.name}</Text>
+                   <View className="flex-row gap-x-3 mt-2">
+                     <Text className="text-gray-400 text-xs">Questions: {quiz._count?.questions || 0}</Text>
+                     <Text className="text-gray-400 text-xs">Submissions: {quiz._count?.submissions || 0}</Text>
+                   </View>
+                </View>
+                <View className="items-end gap-y-2">
+                  <View className={`px-2 py-1 rounded-full ${quiz.isPublished ? 'bg-green-100' : 'bg-orange-100'}`}>
+                     <Text className={`text-[10px] font-bold ${quiz.isPublished ? 'text-green-600' : 'text-orange-600'}`}>
+                       {quiz.isPublished ? 'PUBLISHED' : 'DRAFT'}
+                     </Text>
+                  </View>
+                  <Text className="text-gray-400 text-[10px] font-medium">Due: {new Date(quiz.dueDate).toLocaleDateString()}</Text>
+                </View>
+             </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Recent Submissions */}
+      <View className="px-6 mt-8">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-primary text-lg font-bold">Recent Submissions</Text>
+          <TouchableOpacity>
+            <Text className="text-blue-500 text-sm font-medium">View All</Text>
+          </TouchableOpacity>
+        </View>
+        <View className="gap-y-3">
+          {data.recentSubmissions?.length === 0 ? (
+            <Text className="text-gray-400 font-medium">No recent submissions found.</Text>
+          ) : data.recentSubmissions?.map((sub: any) => (
+             <View key={sub.id} className="p-4 bg-white rounded-2xl border border-gray-50 shadow-sm flex-row justify-between items-center">
+                <View className="flex-1 pr-4">
+                   <Text className="text-primary font-bold text-base" numberOfLines={1}>{sub.student?.user?.name}</Text>
+                   <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>{sub.quiz?.title}</Text>
+                   <Text className="text-gray-400 text-[10px] mt-1.5">{new Date(sub.submittedAt).toLocaleDateString()} at {new Date(sub.submittedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-primary font-black text-lg">{sub.score} <Text className="text-gray-400 text-sm font-medium">/ {sub.totalPoints}</Text></Text>
+                  <Text className={`text-[10px] font-bold mt-1 ${(sub.score/sub.totalPoints) >= 0.5 ? 'text-green-500' : 'text-red-500'}`}>
+                    {Math.round((sub.score/sub.totalPoints)*100)}%
+                  </Text>
+                </View>
+             </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Batch Summary */}
+      <View className="px-6 mt-8">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-primary text-lg font-bold">My Batches</Text>
+          <TouchableOpacity>
+            <Text className="text-blue-500 text-sm font-medium">View All</Text>
+          </TouchableOpacity>
+        </View>
+        <View className="gap-y-3">
+          {data.batchSummary?.map((batch: any) => (
+             <View key={batch.id} className="p-4 bg-white rounded-2xl border border-gray-50 shadow-sm flex-row items-center gap-x-4">
+                <View className="h-12 w-12 rounded-2xl bg-blue-50 items-center justify-center">
+                  <Ionicons name="people-outline" size={22} color="#3b82f6" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-primary font-bold text-base">{batch.name}</Text>
+                  <View className="flex-row gap-x-2 mt-1">
+                    <Text className="text-gray-500 text-xs font-medium">{batch.studentCount} Students</Text>
+                    <Text className="text-gray-300 text-xs">•</Text>
+                    <Text className="text-gray-500 text-xs font-medium">{batch.quizCount} Quizzes</Text>
+                  </View>
+                </View>
+                <View className="items-end">
+                  <Text className="text-blue-500 font-bold text-sm">{batch.averageScorePercentage}%</Text>
+                  <Text className="text-gray-400 text-[10px]">Avg Score</Text>
+                </View>
+             </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function Dashboard() {
   const { logout, user } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -159,118 +310,18 @@ export default function Dashboard() {
 
         {user?.role === 'ADMIN' ? (
           <AdminOverview />
+        ) : user?.role === 'TEACHER' ? (
+          <TeacherOverview />
         ) : (
-          <>
-            {/* Main Card Section */}
-            <View className="px-6 mt-6">
-              <View 
-                className="w-full bg-primary rounded-3xl p-6 shadow-xl shadow-primary/40 overflow-hidden"
-                style={{ backgroundColor: "#1e293b" }}
-              >
-                <View className="flex-row justify-between items-start">
-                  <View>
-                    <Text className="text-gray-400 text-sm font-medium">Total Balance</Text>
-                    <Text className="text-white text-3xl font-bold mt-1">$12,480.00</Text>
-                  </View>
-                  <View className="bg-white/10 px-3 py-1 rounded-full border border-white/20">
-                    <Text className="text-white text-xs font-bold">+2.4%</Text>
-                  </View>
-                </View>
-
-                <View className="flex-row gap-x-4 mt-8">
-                  <TouchableOpacity className="flex-1 h-12 bg-white rounded-2xl items-center justify-center flex-row gap-x-2">
-                    <Ionicons name="add" size={20} color="#1e293b" />
-                    <Text className="text-primary font-bold">Top Up</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity className="flex-1 h-12 bg-white/10 rounded-2xl items-center justify-center flex-row gap-x-2 border border-white/20">
-                    <Ionicons name="send-outline" size={18} color="#ffffff" />
-                    <Text className="text-white font-bold">Send</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+          <View className="px-6 mt-6 items-center justify-center py-20">
+            <View className="h-20 w-20 bg-gray-100 rounded-full items-center justify-center mb-4">
+              <Ionicons name="construct-outline" size={32} color="#94a3b8" />
             </View>
-
-            {/* Stats Grid */}
-            <View className="px-6 mt-8 flex-row gap-x-4">
-              <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
-                <View className="h-10 w-10 rounded-2xl bg-blue-50 items-center justify-center mb-3">
-                  <Ionicons name="trending-up-outline" size={20} color="#3b82f6" />
-                </View>
-                <Text className="text-gray-500 text-xs font-medium">Income</Text>
-                <Text className="text-primary text-lg font-bold mt-1">$4,250</Text>
-              </View>
-              <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
-                <View className="h-10 w-10 rounded-2xl bg-orange-50 items-center justify-center mb-3">
-                  <Ionicons name="trending-down-outline" size={20} color="#f97316" />
-                </View>
-                <Text className="text-gray-500 text-xs font-medium">Expenses</Text>
-                <Text className="text-primary text-lg font-bold mt-1">$1,840</Text>
-              </View>
-            </View>
-
-            {/* My Data Section */}
-            <View className="px-6 mt-8">
-              <View className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-primary text-lg font-bold">My Data</Text>
-                </View>
-                <View className="bg-gray-50 rounded-2xl p-4 border border-gray-100 min-h-[120px] justify-center">
-                  {user ? (
-                    <View className="gap-y-2">
-                      <Text className="text-gray-600 font-medium">Name: <Text className="text-primary font-bold">{user.name}</Text></Text>
-                      <Text className="text-gray-600 font-medium">Email: <Text className="text-primary font-bold">{user.email}</Text></Text>
-                      <Text className="text-gray-600 font-medium">Role: <Text className="text-primary font-bold">{user.role}</Text></Text>
-                      <Text className="text-gray-600 font-medium">Status: <Text className="text-green-500 font-bold">{user.status}</Text></Text>
-                      <Text className="text-gray-600 font-medium">Account ID: <Text className="text-gray-400 font-mono text-xs">{user.id}</Text></Text>
-                    </View>
-                  ) : (
-                    <Text className="text-gray-400 font-medium text-center">
-                      Your custom data will appear here
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </View>
-
-            {/* Recent Activity */}
-            <View className="px-6 mt-8">
-              <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-primary text-lg font-bold">Recent Activity</Text>
-                <TouchableOpacity>
-                  <Text className="text-gray-500 text-sm font-medium">View All</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="gap-y-3">
-                {[
-                  { id: 1, name: "Apple Store", date: "24 Apr 2024", amount: "-$19.99", icon: "logo-apple", color: "#000000" },
-                  { id: 2, name: "Stripe Payout", date: "22 Apr 2024", amount: "+$1,250.00", icon: "card-outline", color: "#6366f1" },
-                  { id: 3, name: "Netflix Sub", date: "20 Apr 2024", amount: "-$14.99", icon: "play-outline", color: "#ef4444" },
-                ].map((item) => (
-                  <TouchableOpacity 
-                    key={item.id}
-                    className="flex-row items-center justify-between p-4 bg-white rounded-2xl border border-gray-50 shadow-sm"
-                  >
-                    <View className="flex-row items-center gap-x-4">
-                      <View 
-                        style={{ backgroundColor: `${item.color}15` }}
-                        className="h-12 w-12 rounded-2xl items-center justify-center"
-                      >
-                        <Ionicons name={item.icon as any} size={22} color={item.color} />
-                      </View>
-                      <View>
-                        <Text className="text-primary font-bold">{item.name}</Text>
-                        <Text className="text-gray-400 text-xs mt-1">{item.date}</Text>
-                      </View>
-                    </View>
-                    <Text className={`font-bold ${item.amount.startsWith("+") ? "text-green-500" : "text-primary"}`}>
-                      {item.amount}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </>
+            <Text className="text-primary font-bold text-xl mb-2">Coming Soon</Text>
+            <Text className="text-gray-500 text-center">
+              The {user?.role || 'Student'} dashboard is currently under development.
+            </Text>
+          </View>
         )}
       </ScrollView>
 
