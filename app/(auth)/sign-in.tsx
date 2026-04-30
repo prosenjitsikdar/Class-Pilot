@@ -22,8 +22,8 @@ import { useAuth } from "../_layout";
 
 export default function SignIn() {
     const router = useRouter();
-    const [email, setEmail] = useState("admin@classpilot.com");
-    const [password, setPassword] = useState("Admin12345");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -97,9 +97,33 @@ export default function SignIn() {
                             Sign in to continue your journey
                         </Text>
                     </View>
+                    {/* Quick Login Demo Buttons */}
+                    <View className="mt-8">
+                        <Text className="text-xs font-semibold text-gray-400 text-center uppercase tracking-wider mb-3">Quick Login (Demo)</Text>
+                        <View className="flex-row justify-between gap-x-3">
+                            <TouchableOpacity
+                                onPress={() => { setEmail("admin@classpilot.com"); setPassword("Admin12345"); }}
+                                className="flex-1 py-2.5 rounded-xl bg-primary/10 items-center border border-primary/20"
+                            >
+                                <Text className="text-primary font-bold text-xs">Admin</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => { setEmail("john@example.com"); setPassword("Teacher123"); }}
+                                className="flex-1 py-2.5 rounded-xl bg-blue-50 items-center border border-blue-200"
+                            >
+                                <Text className="text-blue-600 font-bold text-xs">Teacher</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => { setEmail("alice@example.com"); setPassword("NewPass@1234"); }}
+                                className="flex-1 py-2.5 rounded-xl bg-green-50 items-center border border-green-200"
+                            >
+                                <Text className="text-green-600 font-bold text-xs">Student</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
                     {/* Form Section */}
-                    <View className="mt-12 gap-y-4">
+                    <View className="mt-8 gap-y-4">
                         <View>
                             <Text className="mb-2 ml-1 text-sm font-semibold text-primary">
                                 Email Address

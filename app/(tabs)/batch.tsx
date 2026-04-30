@@ -2,20 +2,31 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { getAdminBatches } from "../../lib/api/admin";
+import { getTeacherBatches } from "../../lib/api/teacher";
+import { useAuth } from "../_layout";
 
 export default function Batches() {
+  const router = useRouter();
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchBatches();
-  }, []);
+  }, [user]);
 
   const fetchBatches = async () => {
+    if (!user) return; // Wait until user context loads
     try {
-      const data = await getAdminBatches();
-      setBatches(data.data || []);
+      let res;
+      if (user.role === 'TEACHER') {
+        res = await getTeacherBatches();
+      } else {
+        res = await getAdminBatches();
+      }
+      setBatches(res.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -80,15 +91,18 @@ export default function Batches() {
                 <View className="flex-row gap-x-4">
                   <View className="flex-row items-center gap-x-1.5">
                     <Ionicons name="people-outline" size={16} color="#64748b" />
-                    <Text className="text-gray-500 font-medium text-xs">{batch._count?.students || 0} Students</Text>
+                    <Text className="text-gray-500 font-medium text-xs">{batch._count?.students ?? batch.studentCount ?? 0} Students</Text>
                   </View>
                   <View className="flex-row items-center gap-x-1.5">
                     <Ionicons name="document-text-outline" size={16} color="#64748b" />
-                    <Text className="text-gray-500 font-medium text-xs">{batch._count?.quizzes || 0} Quizzes</Text>
+                    <Text className="text-gray-500 font-medium text-xs">{batch._count?.quizzes ?? batch.quizCount ?? 0} Quizzes</Text>
                   </View>
                 </View>
                 
-                <TouchableOpacity className="bg-primary/5 px-3 py-1.5 rounded-xl">
+                <TouchableOpacity 
+                  onPress={() => router.push(`/batch/${batch.id}` as any)}
+                  className="bg-primary/5 px-3 py-1.5 rounded-xl"
+                >
                   <Text className="text-primary font-bold text-xs">Manage</Text>
                 </TouchableOpacity>
               </View>
